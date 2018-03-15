@@ -204,12 +204,7 @@ impl Window {
     ) -> Result<Window> {
         let event_loop = EventsLoop::new();
 
-        Window::platform_window_init();
-        let window = WindowBuilder::new()
-            .with_title(title)
-            .with_visibility(false)
-            .with_transparency(true)
-            .with_decorations(window_config.decorations());
+        let window = Window::platform_window_init(title, window_config);
         let window = create_gl_window(window.clone(), &event_loop, false)
             .or_else(|_| create_gl_window(window, &event_loop, true))?;
         window.show();
@@ -322,7 +317,7 @@ impl Window {
     }
 
     #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "openbsd"))]
-    pub fn platform_window_init() {
+    pub fn platform_window_init(title: &str, window_config: &WindowConfig) -> WindowBuilder {
         /// Set up env to make XIM work correctly
         use x11_dl::xlib;
         use libc::{setlocale, LC_CTYPE};
@@ -334,10 +329,31 @@ impl Window {
             // which might be the XMODIFIERS set in env
             (xlib.XSetLocaleModifiers)(b"\0".as_ptr() as *const _);
         }
+
+        WindowBuilder::new()
+            .with_title(title)
+            .with_visibility(false)
+            .with_transparency(true)
+            .with_decorations(window_config.decorations())
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn platform_window_init(title: &str, window_config: &WindowConfig) -> WindowBuilder {
+        use glutin::os::macos::WindowBuilderExt;
+        let decorations = window_config.decorations();
+        WindowBuilder::new()
+            .with_title(title)
+            .with_title_hidden(!decorations)
+            .with_titlebar_buttons_hidden(!decorations)
+            .with_titlebar_transparent(!decorations)
+            // .with_fullsize_content_view(!decorations)
+            // .with_titlebar_hidden(!decorations)
+            .with_visibility(false)
+            .with_transparency(true)
     }
 
     /// TODO: change this directive when adding functions for other platforms
-    #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "openbsd")))]
+    #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "openbsd", target_os="macos")))]
     pub fn platform_window_init() {
     }
 
@@ -445,6 +461,15 @@ impl OsExtensions for Window {
                     ptr::null_mut());
             }
         }
+    }
+
+    fn get_window(&self, title: &str) -> WindowBuilder {
+        WindowBuilder::new()
+            .with_title(title)
+            // .with_titlebar_hidden(true)
+            .with_visibility(false)
+            .with_transparency(true)
+            .with_decorations(window_config.decorations());
     }
 }
 
