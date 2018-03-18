@@ -343,11 +343,14 @@ impl Window {
         let decorations = window_config.decorations();
         WindowBuilder::new()
             .with_title(title)
+
             .with_title_hidden(!decorations)
             .with_titlebar_buttons_hidden(!decorations)
             .with_titlebar_transparent(!decorations)
-            // .with_fullsize_content_view(!decorations)
+            .with_fullsize_content_view(!decorations)
+
             // .with_titlebar_hidden(!decorations)
+
             .with_visibility(false)
             .with_transparency(true)
     }
