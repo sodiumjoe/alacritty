@@ -142,7 +142,9 @@ impl Display {
         // get window properties for initializing the other subsystems
         let mut viewport_size = window.inner_size_pixels()
             .expect("glutin returns window size");
+        println!("viewport size: {:?}", viewport_size);
         let dpr = window.hidpi_factor();
+        println!("dpi: {:?}", viewport_size);
 
         info!("device_pixel_ratio: {}", dpr);
 
@@ -165,6 +167,8 @@ impl Display {
                 width: Pixels(width + 2 * config.padding().x as u32),
                 height: Pixels(height + 2 * config.padding().y as u32),
             };
+
+            println!("new viewport size: {:?}", new_viewport_size);
 
             window.set_inner_size(&new_viewport_size);
             renderer.resize(new_viewport_size.width.0 as _, new_viewport_size.height.0 as _);
