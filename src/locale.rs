@@ -26,14 +26,14 @@ pub fn set_locale_environment() {
     let (language_code, country_code) = unsafe {
         let locale_class = Class::get("NSLocale").unwrap();
         let locale: *const Object = msg_send![locale_class, currentLocale];
-        msg_send![locale_class, release];
+        let _ : () = msg_send![locale_class, release];
         let language_code: *const Object = msg_send![locale, languageCode];
         let country_code: *const Object = msg_send![locale, countryCode];
-        msg_send![locale, release];
+        let _ : () = msg_send![locale, release];
         let language_code_str = nsstring_as_str(language_code).to_owned();
-        msg_send![language_code, release];
+        let _ : () = msg_send![language_code, release];
         let country_code_str = nsstring_as_str(country_code).to_owned();
-        msg_send![country_code, release];
+        let _ : () = msg_send![country_code, release];
         (language_code_str, country_code_str)
     };
     let locale_id = format!("{}_{}.UTF-8", &language_code, &country_code);
