@@ -23,20 +23,31 @@ use std::env;
 use objc::runtime::{Class, Object};
 
 pub fn set_locale_environment() {
-    let (language_code, country_code) = unsafe {
+    let locale_id = unsafe {
         let locale_class = Class::get("NSLocale").unwrap();
         let locale: *const Object = msg_send![locale_class, currentLocale];
         let _ : () = msg_send![locale_class, release];
-        let language_code: *const Object = msg_send![locale, languageCode];
-        let country_code: *const Object = msg_send![locale, countryCode];
+        let is_language_code_supported: bool = msg_send![locale, respondsToSelector:sel!(languageCode)];
+        let is_country_code_supported: bool = msg_send![locale, respondsToSelector:sel!(countryCode)];
+        let locale_id = if is_language_code_supported && is_country_code_supported {
+            let language_code: *const Object = msg_send![locale, languageCode];
+            let country_code: *const Object = msg_send![locale, countryCode];
+            let language_code_str = nsstring_as_str(language_code).to_owned();
+            let _ : () = msg_send![language_code, release];
+            let country_code_str = nsstring_as_str(country_code).to_owned();
+            let _ : () = msg_send![country_code, release];
+            format!("{}_{}.UTF-8", &language_code_str, &country_code_str)
+        } else {
+            let identifier: *const Object = msg_send![locale, localeIdentifier];
+            let identifier_str = nsstring_as_str(identifier).to_owned();
+            let _ : () = msg_send![identifier, release];
+            identifier_str
+        };
         let _ : () = msg_send![locale, release];
-        let language_code_str = nsstring_as_str(language_code).to_owned();
-        let _ : () = msg_send![language_code, release];
-        let country_code_str = nsstring_as_str(country_code).to_owned();
-        let _ : () = msg_send![country_code, release];
-        (language_code_str, country_code_str)
+        locale_id
     };
-    let locale_id = format!("{}_{}.UTF-8", &language_code, &country_code);
+    println!("{:?}", locale_id);
+    // let locale_id = format!("{}_{}.UTF-8", &language_code, &country_code);
     // check if locale_id is valid
     let locale_c_str = CString::new(locale_id.to_owned()).unwrap();
     let locale_ptr = locale_c_str.as_ptr();
