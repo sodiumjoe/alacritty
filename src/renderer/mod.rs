@@ -29,7 +29,7 @@ use gl;
 use index::{Line, Column, RangeInclusive};
 use notify::{Watcher, watcher, RecursiveMode, DebouncedEvent};
 
-use config::{self, Config, Delta};
+use config::{self, Config, Delta, Padding};
 use term::{self, cell, RenderableCell};
 use window::{Size, Pixels};
 
@@ -123,8 +123,8 @@ pub struct ShaderProgram {
     /// Rendering is split into two passes; 1 for backgrounds, and one for text
     u_background: GLint,
 
-    padding_x: u8,
-    padding_y: u8,
+    /// Window padding
+    padding: Padding,
 }
 
 
@@ -719,12 +719,14 @@ impl QuadRenderer {
     }
 
     pub fn resize(&mut self, width: i32, height: i32) {
-        let padding_x = i32::from(self.program.padding_x);
-        let padding_y = i32::from(self.program.padding_y);
-
         // viewport
         unsafe {
-            gl::Viewport(padding_x, padding_y, width - 2 * padding_x, height - 2 * padding_y);
+            gl::Viewport(
+                i32::from(self.program.padding.left),
+                i32::from(self.program.padding.bottom),
+                width - i32::from(self.program.padding.horizontal()),
+                height - i32::from(self.program.padding.vertical()),
+            );
         }
 
         // update projection
@@ -1017,8 +1019,7 @@ impl ShaderProgram {
             u_cell_dim: cell_dim,
             u_visual_bell: visual_bell,
             u_background: background,
-            padding_x: config.padding().x,
-            padding_y: config.padding().y,
+            padding: *(config.padding()),
         };
 
         shader.update_projection(*size.width as f32, *size.height as f32);
@@ -1030,8 +1031,8 @@ impl ShaderProgram {
 
     fn update_projection(&self, width: f32, height: f32) {
         // Bounds check
-        if (width as u32) < (2 * u32::from(self.padding_x)) ||
-            (height as u32) < (2 * u32::from(self.padding_y))
+        if (width as u32) < u32::from(self.padding.horizontal()) ||
+            (height as u32) < u32::from(self.padding.vertical())
         {
             return;
         }
@@ -1043,11 +1044,11 @@ impl ShaderProgram {
         //    correctly.
         let ortho = cgmath::ortho(
             0.,
-            width - 2. * f32::from(self.padding_x),
-            2. * f32::from(self.padding_y),
+            width - f32::from(self.padding.horizontal()),
+            f32::from(self.padding.vertical()),
             height,
             -1.,
-            1.,
+            1.
         );
         let projection: [[f32; 4]; 4] = ortho.into();
 

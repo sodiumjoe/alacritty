@@ -274,7 +274,7 @@ impl<'a, A: ActionContext + 'a> Processor<'a, A> {
             let prev_line = mem::replace(&mut self.ctx.mouse_mut().line, point.line);
             let prev_col = mem::replace(&mut self.ctx.mouse_mut().column, point.col);
 
-            let cell_x = (x as usize - size_info.padding_x as usize) % size_info.cell_width as usize;
+            let cell_x = (x as usize - size_info.padding.left as usize) % size_info.cell_width as usize;
             let half_cell_width = (size_info.cell_width / 2.0) as usize;
 
             let cell_side = if cell_x > half_cell_width {
@@ -627,7 +627,7 @@ mod tests {
 
     use term::{SizeInfo, Term, TermMode};
     use event::{Mouse, ClickState};
-    use config::{self, Config, ClickHandler};
+    use config::{self, Config, ClickHandler, Padding};
     use index::{Point, Side};
     use selection::Selection;
 
@@ -722,8 +722,7 @@ mod tests {
                     height: 51.0,
                     cell_width: 3.0,
                     cell_height: 3.0,
-                    padding_x: 0.0,
-                    padding_y: 0.0,
+                    padding: Padding::new(0, 0, 0, 0),
                 };
 
                 let mut terminal = Term::new(&config, size);

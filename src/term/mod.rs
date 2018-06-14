@@ -27,7 +27,7 @@ use ansi::{self, Color, NamedColor, Attr, Handler, CharsetIndex, StandardCharset
 use grid::{BidirectionalIterator, Grid, ClearRegion, ToRange, Indexed};
 use index::{self, Point, Column, Line, Linear, IndexRange, Contains, RangeInclusive};
 use selection::{self, Span, Selection};
-use config::{Config, VisualBellAnimation};
+use config::{Config, VisualBellAnimation, Padding};
 use {MouseCursor, Rgb};
 use copypasta::{Clipboard, Load, Store};
 use input::FONT_SIZE_STEP;
@@ -743,29 +743,26 @@ pub struct SizeInfo {
     /// Height of individual cell
     pub cell_height: f32,
 
-    /// Horizontal window padding
-    pub padding_x: f32,
-
-    /// Horizontal window padding
-    pub padding_y: f32,
+    /// Window padding
+    pub padding: Padding,
 }
 
 impl SizeInfo {
     #[inline]
     pub fn lines(&self) -> Line {
-        Line(((self.height - 2. * self.padding_y) / self.cell_height) as usize)
+        Line(((self.height - self.padding.vertical() as f32) / self.cell_height) as usize)
     }
 
     #[inline]
     pub fn cols(&self) -> Column {
-        Column(((self.width - 2. * self.padding_x) / self.cell_width) as usize)
+        Column(((self.width - self.padding.horizontal() as f32) / self.cell_width) as usize)
     }
 
     fn contains_point(&self, x: usize, y:usize) -> bool {
-        x <= (self.width - self.padding_x) as usize &&
-            x >= self.padding_x as usize &&
-            y <= (self.height - self.padding_y) as usize &&
-            y >= self.padding_y as usize
+        x <= (self.width - self.padding.right as f32) as usize &&
+            x >= self.padding.left as usize &&
+            y <= (self.height - self.padding.top as f32) as usize &&
+            y >= self.padding.bottom as usize
     }
 
     pub fn pixels_to_coords(&self, x: usize, y: usize) -> Option<Point> {
@@ -773,8 +770,8 @@ impl SizeInfo {
             return None;
         }
 
-        let col = Column((x - self.padding_x as usize) / (self.cell_width as usize));
-        let line = Line((y - self.padding_y as usize) / (self.cell_height as usize));
+        let col = Column((x - self.padding.left as usize) / (self.cell_width as usize));
+        let line = Line((y - self.padding.bottom as usize) / (self.cell_height as usize));
 
         Some(Point {
             line: min(line, self.lines() - 1),
@@ -1020,8 +1017,8 @@ impl Term {
         debug!("Term::resize");
 
         // Bounds check; lots of math assumes width and height are > 0
-        if size.width as usize <= 2 * self.size_info.padding_x as usize ||
-            size.height as usize <= 2 * self.size_info.padding_y as usize
+        if size.width as usize <= (self.size_info.padding.horizontal()) as usize ||
+            size.height as usize <= (self.size_info.padding.vertical()) as usize
         {
             return;
         }
@@ -1942,6 +1939,7 @@ mod tests {
 
     use super::{Cell, Term, SizeInfo};
     use term::cell;
+    use config::Padding;
 
     use grid::Grid;
     use index::{Point, Line, Column};
@@ -1959,8 +1957,7 @@ mod tests {
             height: 51.0,
             cell_width: 3.0,
             cell_height: 3.0,
-            padding_x: 0.0,
-            padding_y: 0.0,
+            padding: Padding::new(0, 0, 0, 0),
         };
         let mut term = Term::new(&Default::default(), size);
         let mut grid: Grid<Cell> = Grid::new(Line(3), Column(5), &Cell::default());
@@ -2002,8 +1999,7 @@ mod tests {
             height: 51.0,
             cell_width: 3.0,
             cell_height: 3.0,
-            padding_x: 0.0,
-            padding_y: 0.0,
+            padding: Padding::new(0, 0, 0, 0),
         };
         let mut term = Term::new(&Default::default(), size);
         let mut grid: Grid<Cell> = Grid::new(Line(1), Column(5), &Cell::default());
@@ -2045,8 +2041,7 @@ mod tests {
             height: 51.0,
             cell_width: 3.0,
             cell_height: 3.0,
-            padding_x: 0.0,
-            padding_y: 0.0,
+            padding: Padding::new(0, 0, 0, 0),
         };
         let mut term = Term::new(&Default::default(), size);
         let cursor = Point::new(Line(0), Column(0));
